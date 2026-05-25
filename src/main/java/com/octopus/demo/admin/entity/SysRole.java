@@ -15,6 +15,7 @@ public class SysRole {
         this.id = id;
         this.name = name;
         this.code = code;
+        this.resources = new ArrayList<>();
     }
 
     public Long getId() { return id; }

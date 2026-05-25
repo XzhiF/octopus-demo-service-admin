@@ -15,6 +15,7 @@ public class SysUser {
         this.id = id;
         this.username = username;
         this.password = password;
+        this.roles = new ArrayList<>();
     }
 
     public Long getId() { return id; }
