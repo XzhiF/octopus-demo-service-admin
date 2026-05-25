@@ -6,6 +6,15 @@ public class SysResource {
     private String code;
     private String type;
 
+    public SysResource() {}
+
+    public SysResource(Long id, String name, String code, String type) {
+        this.id = id;
+        this.name = name;
+        this.code = code;
+        this.type = type;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
