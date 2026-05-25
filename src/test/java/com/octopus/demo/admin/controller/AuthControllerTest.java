@@ -32,7 +32,9 @@ class AuthControllerTest {
     void loginReturnsUnauthorizedWhenCredentialsInvalid() throws Exception {
         when(authService.login(anyString(), anyString())).thenReturn(null);
 
-        String body = "{\"username\":\"admin\",\"password\":\"wrong\"}";
+        String body = """
+                {"username":"admin","password":"wrong"}
+                """;
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -47,14 +49,18 @@ class AuthControllerTest {
         when(authService.login("admin", "123456")).thenReturn("test-token-abc");
         when(authService.getCurrentUser("test-token-abc")).thenReturn(user);
 
-        String body = "{\"username\":\"admin\",\"password\":\"123456\"}";
+        String body = """
+                {"username":"admin","password":"123456"}
+                """;
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("success"))
                 .andExpect(jsonPath("$.data.token").value("test-token-abc"))
-                .andExpect(jsonPath("$.data.user.username").value("admin"));
+                .andExpect(jsonPath("$.data.user.username").value("admin"))
+                .andExpect(jsonPath("$.data.user.password").value((String) null));
     }
 
     @Test
