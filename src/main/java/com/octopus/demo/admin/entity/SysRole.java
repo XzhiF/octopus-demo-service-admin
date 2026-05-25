@@ -9,6 +9,15 @@ public class SysRole {
     private String code;
     private List<SysResource> resources = new ArrayList<>();
 
+    public SysRole() {}
+
+    public SysRole(Long id, String name, String code) {
+        this.id = id;
+        this.name = name;
+        this.code = code;
+        this.resources = new ArrayList<>();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

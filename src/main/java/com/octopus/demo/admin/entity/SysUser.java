@@ -9,6 +9,15 @@ public class SysUser {
     private String password;
     private List<SysRole> roles = new ArrayList<>();
 
+    public SysUser() {}
+
+    public SysUser(Long id, String username, String password) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.roles = new ArrayList<>();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
