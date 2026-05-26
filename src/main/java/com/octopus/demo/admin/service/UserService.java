@@ -4,6 +4,8 @@ import com.octopus.demo.admin.dao.UserDao;
 import com.octopus.demo.admin.dao.RoleDao;
 import com.octopus.demo.admin.entity.SysUser;
 import com.octopus.demo.admin.entity.SysRole;
+import com.octopus.demo.common.bean.PageQueryBean;
+import com.octopus.demo.common.bean.PageResultBean;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,10 @@ public class UserService {
 
     public List<SysUser> findAll() {
         return userDao.findAll();
+    }
+
+    public PageResultBean<SysUser> findAll(PageQueryBean query) {
+        return userDao.findAll(query);
     }
 
     public SysUser assignRoles(Long userId, List<Long> roleIds) {

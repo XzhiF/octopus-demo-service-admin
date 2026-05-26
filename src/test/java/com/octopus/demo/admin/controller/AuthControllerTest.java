@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@DisplayName("AuthController WebMvcTest for Spring Boot 3.x validation")
+@DisplayName("AuthController WebMvcTest for R<T> response format")
 class AuthControllerTest {
 
     @Autowired
@@ -39,7 +39,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(401));
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.msg").value("invalid username or password"));
     }
 
     @Test
@@ -57,10 +58,10 @@ class AuthControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("success"))
+                .andExpect(jsonPath("$.msg").value("success"))
                 .andExpect(jsonPath("$.data.token").value("test-token-abc"))
                 .andExpect(jsonPath("$.data.user.username").value("admin"))
-                .andExpect(jsonPath("$.data.user.password").value((String) null));
+                .andExpect(jsonPath("$.data.user.password").doesNotExist());
     }
 
     @Test

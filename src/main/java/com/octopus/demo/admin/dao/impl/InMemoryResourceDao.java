@@ -2,6 +2,8 @@ package com.octopus.demo.admin.dao.impl;
 
 import com.octopus.demo.admin.dao.ResourceDao;
 import com.octopus.demo.admin.entity.SysResource;
+import com.octopus.demo.common.bean.PageQueryBean;
+import com.octopus.demo.common.bean.PageResultBean;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,5 +38,19 @@ public class InMemoryResourceDao implements ResourceDao {
     @Override
     public void deleteById(Long id) {
         store.remove(id);
+    }
+
+    @Override
+    public PageResultBean<SysResource> findAll(PageQueryBean query) {
+        List<SysResource> all = new ArrayList<>(store.values());
+        long count = all.size();
+        int fromIndex = (query.getPage() - 1) * query.getSize();
+        int toIndex = Math.min(fromIndex + query.getSize(), all.size());
+        List<SysResource> page = fromIndex < all.size()
+                ? new ArrayList<>(all.subList(fromIndex, toIndex)) : List.of();
+        PageResultBean<SysResource> result = new PageResultBean<>();
+        result.setCount(count);
+        result.setList(page);
+        return result;
     }
 }

@@ -1,6 +1,8 @@
 package com.octopus.demo.admin.dao;
 
 import com.octopus.demo.admin.entity.SysUser;
+import com.octopus.demo.common.bean.PageQueryBean;
+import com.octopus.demo.common.bean.PageResultBean;
 import java.util.Optional;
 
 public interface UserDao {
@@ -9,4 +11,5 @@ public interface UserDao {
     Optional<SysUser> findByUsername(String username);
     java.util.List<SysUser> findAll();
     void deleteById(Long id);
+    PageResultBean<SysUser> findAll(PageQueryBean query);
 }
