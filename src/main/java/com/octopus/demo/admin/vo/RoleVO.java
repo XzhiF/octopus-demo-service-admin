@@ -2,7 +2,7 @@ package com.octopus.demo.admin.vo;
 
 import com.octopus.demo.admin.entity.SysRole;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 public class RoleVO {
     private Long id;
@@ -17,8 +17,8 @@ public class RoleVO {
         vo.id = role.getId();
         vo.name = role.getName();
         vo.code = role.getCode();
-        vo.resources = role.getResources().stream()
-                .map(ResourceVO::from).collect(Collectors.toList());
+        vo.resources = role.getResources() == null ? Collections.emptyList()
+                : role.getResources().stream().map(ResourceVO::from).toList();
         return vo;
     }
 

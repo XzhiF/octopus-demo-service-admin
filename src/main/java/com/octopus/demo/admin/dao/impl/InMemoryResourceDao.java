@@ -44,10 +44,16 @@ public class InMemoryResourceDao implements ResourceDao {
     public PageResultBean<SysResource> findAll(PageQueryBean query) {
         List<SysResource> all = new ArrayList<>(store.values());
         long count = all.size();
-        int fromIndex = (query.getPage() - 1) * query.getSize();
+        long fromIndexLong = (long) (query.getPage() - 1) * query.getSize();
+        if (fromIndexLong >= count || fromIndexLong > Integer.MAX_VALUE) {
+            PageResultBean<SysResource> result = new PageResultBean<>();
+            result.setCount(count);
+            result.setList(List.of());
+            return result;
+        }
+        int fromIndex = (int) fromIndexLong;
         int toIndex = Math.min(fromIndex + query.getSize(), all.size());
-        List<SysResource> page = fromIndex < all.size()
-                ? new ArrayList<>(all.subList(fromIndex, toIndex)) : List.of();
+        List<SysResource> page = new ArrayList<>(all.subList(fromIndex, toIndex));
         PageResultBean<SysResource> result = new PageResultBean<>();
         result.setCount(count);
         result.setList(page);

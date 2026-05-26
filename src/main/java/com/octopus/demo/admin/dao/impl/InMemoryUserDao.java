@@ -44,10 +44,16 @@ public class InMemoryUserDao implements UserDao {
     public PageResultBean<SysUser> findAll(PageQueryBean query) {
         List<SysUser> all = new ArrayList<>(store.values());
         long count = all.size();
-        int fromIndex = (query.getPage() - 1) * query.getSize();
+        long fromIndexLong = (long) (query.getPage() - 1) * query.getSize();
+        if (fromIndexLong >= count || fromIndexLong > Integer.MAX_VALUE) {
+            PageResultBean<SysUser> result = new PageResultBean<>();
+            result.setCount(count);
+            result.setList(List.of());
+            return result;
+        }
+        int fromIndex = (int) fromIndexLong;
         int toIndex = Math.min(fromIndex + query.getSize(), all.size());
-        List<SysUser> page = fromIndex < all.size()
-                ? new ArrayList<>(all.subList(fromIndex, toIndex)) : List.of();
+        List<SysUser> page = new ArrayList<>(all.subList(fromIndex, toIndex));
         PageResultBean<SysUser> result = new PageResultBean<>();
         result.setCount(count);
         result.setList(page);
