@@ -2,6 +2,8 @@ package com.octopus.demo.admin.service;
 
 import com.octopus.demo.admin.dao.ResourceDao;
 import com.octopus.demo.admin.entity.SysResource;
+import com.octopus.demo.common.bean.PageQueryBean;
+import com.octopus.demo.common.bean.PageResultBean;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -31,5 +33,9 @@ public class ResourceService {
 
     public List<SysResource> findAll() {
         return resourceDao.findAll();
+    }
+
+    public PageResultBean<SysResource> findAll(PageQueryBean query) {
+        return resourceDao.findAll(query);
     }
 }
