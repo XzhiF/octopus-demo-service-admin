@@ -14,7 +14,9 @@ import java.util.List;
 
 /**
  * 管理端审计日志查询端点。
- * 需要 X-User-Id 请求头（由 @RequireAuth 强制执行），防止未授权访问审计数据。
+ * 需要 X-User-Id 请求头（由 @RequireAuth 强制执行）。
+ * 生产环境应增加管理员角色校验（如 @RequireRole("ADMIN")），
+ * 当前 Demo 阶段依赖网关层权限控制。
  */
 @RequireAuth
 @RestController

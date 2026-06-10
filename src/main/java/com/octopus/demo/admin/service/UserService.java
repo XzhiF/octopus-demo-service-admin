@@ -85,7 +85,7 @@ public class UserService {
         safeAudit(() -> auditLogger.log(AuditEvent.of(
             AuditContext.getCurrentUserId(),
             "ASSIGN_ROLE", "USER", String.valueOf(userId),
-            Map.of("roleIds", roleIds.toString()))));
+            Map.of("roleIds", roleIds.stream().map(String::valueOf).collect(Collectors.joining(","))))));
         return saved;
     }
 

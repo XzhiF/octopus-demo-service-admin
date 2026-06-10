@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,5 +66,41 @@ class UserServiceAuditTest {
         userService.delete(999L);
 
         verify(auditLogger, never()).log(any());
+    }
+
+    @Test
+    @DisplayName("create succeeds even when audit logging fails")
+    void create_auditFails_businessSucceeds() {
+        var user = new SysUser();
+        user.setId(1L);
+        when(userDao.save(any(SysUser.class))).thenReturn(user);
+        doThrow(new RuntimeException("audit unavailable")).when(auditLogger).log(any(AuditEvent.class));
+
+        SysUser created = userService.create(user);
+
+        assertNotNull(created);
+        verify(userDao).save(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("assignRoles logs ASSIGN_ROLE audit event with comma-separated roleIds")
+    void assignRoles_logsAuditEvent() {
+        var user = new SysUser();
+        user.setId(1L);
+        var role1 = new com.octopus.demo.admin.entity.SysRole();
+        role1.setId(10L);
+        var role2 = new com.octopus.demo.admin.entity.SysRole();
+        role2.setId(20L);
+        when(userDao.findById(1L)).thenReturn(Optional.of(user));
+        when(roleDao.findById(10L)).thenReturn(Optional.of(role1));
+        when(roleDao.findById(20L)).thenReturn(Optional.of(role2));
+        when(userDao.save(any(SysUser.class))).thenReturn(user);
+
+        userService.assignRoles(1L, List.of(10L, 20L));
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditLogger).log(captor.capture());
+        assertEquals("ASSIGN_ROLE", captor.getValue().action());
+        assertEquals("10,20", captor.getValue().details().get("roleIds"));
     }
 }
