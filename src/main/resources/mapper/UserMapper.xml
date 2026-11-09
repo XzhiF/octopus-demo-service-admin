@@ -8,6 +8,7 @@
         <result property="username" column="username"/>
         <result property="password" column="password_hash"/>
         <result property="nickname" column="nickname"/>
+        <result property="gender" column="gender"/>
         <result property="status" column="status"/>
         <collection property="roles" ofType="com.octopus.demo.admin.entity.SysRole">
             <id property="id" column="role_id"/>
@@ -34,6 +35,7 @@
         <result property="username" column="username"/>
         <result property="password" column="password_hash"/>
         <result property="nickname" column="nickname"/>
+        <result property="gender" column="gender"/>
         <result property="status" column="status"/>
     </resultMap>
 
@@ -55,7 +57,7 @@
     </sql>
 
     <sql id="detailColumns">
-        SELECT u.id, u.username, u.password_hash, u.nickname, u.status,
+        SELECT u.id, u.username, u.password_hash, u.nickname, u.gender, u.status,
                r.id AS role_id, r.name AS role_name, r.code AS role_code,
                m.id AS menu_id, m.parent_id AS menu_parent_id, m.name AS menu_name,
                m.perms AS menu_perms, m.type AS menu_type, m.path AS menu_path,
@@ -79,11 +81,11 @@
     </select>
 
     <select id="findAll" resultMap="basicMap">
-        SELECT id, username, password_hash, nickname, status FROM sys_user ORDER BY id
+        SELECT id, username, password_hash, nickname, gender, status FROM sys_user ORDER BY id
     </select>
 
     <select id="findPage" resultMap="basicMap">
-        SELECT id, username, password_hash, nickname, status FROM sys_user
+        SELECT id, username, password_hash, nickname, gender, status FROM sys_user
         <include refid="userFilter"/>
         ORDER BY id LIMIT #{size} OFFSET #{offset}
     </select>
@@ -94,14 +96,15 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sys_user (username, password_hash, nickname, status)
-        VALUES (#{username}, #{password}, #{nickname}, COALESCE(#{status}, 1))
+        INSERT INTO sys_user (username, password_hash, nickname, gender, status)
+        VALUES (#{username}, #{password}, #{nickname}, #{gender}, COALESCE(#{status}, 1))
     </insert>
 
     <update id="update">
         UPDATE sys_user
         SET username = #{username},
             nickname = #{nickname},
+            gender = #{gender},
             password_hash = COALESCE(#{password}, password_hash),
             status = COALESCE(#{status}, status)
         WHERE id = #{id}

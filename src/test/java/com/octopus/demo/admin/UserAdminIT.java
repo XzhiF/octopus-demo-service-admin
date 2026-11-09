@@ -235,6 +235,54 @@ class UserAdminIT {
         assertThat(roleBindingCount(userId)).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("gender round-trips through create/update/read and a blank value clears it")
+    void genderPersistsAndClears() throws Exception {
+        String adminToken = login("admin", "123456");
+        Map<String, Object> body = userBody("e2e_gender", 2);
+        body.put("gender", "1");
+
+        MvcResult created = mockMvc.perform(post("/api/users")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.gender").value("1"))
+                .andReturn();
+        long id = objectMapper.readTree(
+                        created.getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .path("data").path("id").asLong();
+
+        mockMvc.perform(put("/api/users/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "e2e_gender",
+                                "nickname", "e2e_gender 昵称",
+                                "gender", "2",
+                                "status", 1))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.gender").value("2"));
+
+        mockMvc.perform(get("/api/users/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.gender").value("2"));
+
+        mockMvc.perform(put("/api/users/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "e2e_gender",
+                                "nickname", "e2e_gender 昵称",
+                                "gender", "",
+                                "status", 1))))
+                .andExpect(status().isOk());
+        String stored = jdbcTemplate.queryForObject(
+                "SELECT gender FROM sys_user WHERE id = ?", String.class, id);
+        assertThat(stored).isNull();
+    }
+
     private Map<String, Object> userBody(String username, long roleId) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("username", username);

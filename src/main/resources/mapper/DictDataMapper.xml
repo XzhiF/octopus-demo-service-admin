@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.DictDataMapper">
+
+    <sql id="columns">
+        id, dict_type, dict_label, dict_value, sort, status
+    </sql>
+
+    <select id="findById" resultType="com.octopus.demo.admin.entity.SysDictData">
+        SELECT <include refid="columns"/> FROM sys_dict_data WHERE id = #{id}
+    </select>
+
+    <select id="findByType" resultType="com.octopus.demo.admin.entity.SysDictData">
+        SELECT <include refid="columns"/> FROM sys_dict_data
+        WHERE dict_type = #{dictType}
+        ORDER BY sort, id
+    </select>
+
+    <select id="findEnabledByType" resultType="com.octopus.demo.admin.entity.SysDictData">
+        SELECT <include refid="columns"/> FROM sys_dict_data
+        WHERE dict_type = #{dictType} AND status = 1
+        ORDER BY sort, id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_dict_data (dict_type, dict_label, dict_value, sort, status)
+        VALUES (#{dictType}, #{dictLabel}, #{dictValue}, COALESCE(#{sort}, 0), COALESCE(#{status}, 1))
+    </insert>
+
+    <update id="update">
+        UPDATE sys_dict_data
+        SET dict_type = #{dictType},
+            dict_label = #{dictLabel},
+            dict_value = #{dictValue},
+            sort = COALESCE(#{sort}, sort),
+            status = COALESCE(#{status}, status)
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_dict_data WHERE id = #{id}
+    </delete>
+
+    <select id="countByType" resultType="long">
+        SELECT COUNT(*) FROM sys_dict_data WHERE dict_type = #{dictType}
+    </select>
+
+</mapper>

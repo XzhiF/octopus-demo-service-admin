@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.ConfigMapper">
+
+    <resultMap id="configMap" type="com.octopus.demo.admin.entity.SysConfig">
+        <id property="id" column="id"/>
+        <result property="configKey" column="config_key"/>
+        <result property="configValue" column="config_value"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, config_key, config_value, remark
+    </sql>
+
+    <sql id="keyFilter">
+        <if test="key != null and key != ''">
+            AND config_key LIKE CONCAT('%', #{key}, '%')
+        </if>
+    </sql>
+
+    <select id="findById" resultMap="configMap">
+        SELECT <include refid="columns"/> FROM sys_config WHERE id = #{id}
+    </select>
+
+    <select id="findByKey" resultMap="configMap">
+        SELECT <include refid="columns"/> FROM sys_config WHERE config_key = #{configKey} LIMIT 1
+    </select>
+
+    <select id="findPage" resultMap="configMap">
+        SELECT <include refid="columns"/> FROM sys_config
+        WHERE 1 = 1
+        <include refid="keyFilter"/>
+        ORDER BY id
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_config
+        WHERE 1 = 1
+        <include refid="keyFilter"/>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_config (config_key, config_value, remark)
+        VALUES (#{configKey}, #{configValue}, #{remark})
+    </insert>
+
+    <update id="update">
+        UPDATE sys_config
+        SET config_key   = #{configKey},
+            config_value = #{configValue},
+            remark       = #{remark}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_config WHERE id = #{id}
+    </delete>
+
+    <select id="countByKey" resultType="int">
+        SELECT COUNT(*) FROM sys_config WHERE config_key = #{configKey}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+</mapper>

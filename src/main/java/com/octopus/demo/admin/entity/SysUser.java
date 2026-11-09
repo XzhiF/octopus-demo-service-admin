@@ -8,6 +8,8 @@ public class SysUser {
     private String username;
     private String password;
     private String nickname;
+    /** Dictionary value from {@code sys_user_sex}; null when not set. */
+    private String gender;
     private Integer status = 1;
     private List<SysRole> roles = new ArrayList<>();
 
@@ -31,6 +33,9 @@ public class SysUser {
 
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }

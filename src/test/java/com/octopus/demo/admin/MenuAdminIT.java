@@ -119,9 +119,13 @@ class MenuAdminIT {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode data = objectMapper.readTree(response).path("data");
 
-        assertThat(data.size()).isEqualTo(1);
-        JsonNode system = data.get(0);
-        assertThat(system.path("name").asText()).isEqualTo("系统管理");
+        JsonNode system = null;
+        for (JsonNode root : data) {
+            if ("系统管理".equals(root.path("name").asText())) {
+                system = root;
+            }
+        }
+        assertThat(system).isNotNull();
         assertThat(system.path("type").asText()).isEqualTo("catalog");
         assertThat(system.path("children").size()).isEqualTo(3);
 

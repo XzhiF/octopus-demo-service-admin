@@ -37,6 +37,7 @@ public class UserService {
         }
         SysUser user = new SysUser(null, username, PasswordUtils.encode(request.password()));
         user.setNickname(request.nickname());
+        user.setGender(normalizeGender(request.gender()));
         user.setStatus(normalizeStatus(request.status()));
         SysUser saved = userDao.save(user);
         if (request.roleIds() != null) {
@@ -59,6 +60,7 @@ public class UserService {
                 });
         existing.setUsername(username);
         existing.setNickname(request.nickname());
+        existing.setGender(normalizeGender(request.gender()));
         if (request.status() != null) {
             Integer normalized = normalizeStatus(request.status());
             if (normalized == 0 && isBuiltIn(existing)) {
@@ -149,6 +151,11 @@ public class UserService {
         if (password == null || password.isBlank()) {
             throw new IllegalArgumentException("密码不能为空");
         }
+    }
+
+    /** Blank clears the value; the stored value is the raw {@code sys_user_sex} dict value. */
+    private String normalizeGender(String gender) {
+        return gender == null || gender.isBlank() ? null : gender.trim();
     }
 
     private Integer normalizeStatus(Integer status) {

@@ -6,6 +6,7 @@ import java.util.List;
 public record UserSaveRequest(
         String username,
         String nickname,
+        String gender,
         String password,
         Integer status,
         List<Long> roleIds
