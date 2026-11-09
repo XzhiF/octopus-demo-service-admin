@@ -18,10 +18,10 @@ log "1/4 octopus-demo-java-common: mvn clean install"
 mvn -B -f "$COMMON_DIR/pom.xml" clean install
 
 log "2/4 octopus-demo-service-admin: mvn test"
-mvn -B -f "$SERVICE_DIR/pom.xml" test
+mvn -B -f "$SERVICE_DIR/pom.xml" test -Dtest="*Test,*IT"
 
 log "3/4 octopus-demo-api-admin: mvn test"
-mvn -B -f "$API_DIR/pom.xml" test
+mvn -B -f "$API_DIR/pom.xml" test -Dtest="*Test,*IT"
 
 log "4/4 octopus-demo-web-admin: npm ci && npm run build"
 ( cd "$WEB_DIR" && npm ci --no-audit --no-fund && npm run build )
