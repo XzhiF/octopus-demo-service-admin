@@ -62,9 +62,22 @@
                 #{code}, COALESCE(#{sort}, 0), COALESCE(#{visible}, 1), COALESCE(#{status}, 1))
     </insert>
 
+    <select id="countChildren" resultType="int">
+        SELECT COUNT(*) FROM sys_menu WHERE parent_id = #{id}
+    </select>
+
+    <select id="countRoleRefs" resultType="int">
+        SELECT COUNT(*) FROM sys_role_menu WHERE menu_id = #{id}
+    </select>
+
+    <select id="countByPerms" resultType="int">
+        SELECT COUNT(*) FROM sys_menu WHERE perms = #{perms}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
     <update id="update">
         UPDATE sys_menu
-        SET parent_id = COALESCE(#{parentId}, parent_id),
+        SET parent_id = #{parentId},
             name = #{name},
             type = #{type},
             path = #{path},

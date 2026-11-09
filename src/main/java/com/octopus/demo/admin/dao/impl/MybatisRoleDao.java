@@ -1,7 +1,6 @@
 package com.octopus.demo.admin.dao.impl;
 
 import com.octopus.demo.admin.dao.RoleDao;
-import com.octopus.demo.admin.entity.SysResource;
 import com.octopus.demo.admin.entity.SysRole;
 import com.octopus.demo.admin.mapper.RoleMapper;
 import com.octopus.demo.common.bean.PageQueryBean;
@@ -27,20 +26,7 @@ public class MybatisRoleDao implements RoleDao {
         } else {
             roleMapper.update(role);
         }
-        bindResources(role);
         return role;
-    }
-
-    private void bindResources(SysRole role) {
-        if (role.getId() == null || role.getResources() == null || role.getResources().isEmpty()) {
-            return;
-        }
-        roleMapper.deleteRoleMenus(role.getId());
-        for (SysResource resource : role.getResources()) {
-            if (resource != null && resource.getId() != null) {
-                roleMapper.insertRoleMenu(role.getId(), resource.getId());
-            }
-        }
     }
 
     @Override
@@ -65,8 +51,8 @@ public class MybatisRoleDao implements RoleDao {
     }
 
     @Override
-    public PageResultBean<SysRole> findAll(PageQueryBean query) {
-        long total = roleMapper.count();
+    public PageResultBean<SysRole> findAll(PageQueryBean query, String name, Integer status) {
+        long total = roleMapper.count(name, status);
         long offset = (long) (query.getPage() - 1) * query.getSize();
         PageResultBean<SysRole> result = new PageResultBean<>();
         result.setCount(total);
@@ -74,7 +60,35 @@ public class MybatisRoleDao implements RoleDao {
             result.setList(List.of());
             return result;
         }
-        result.setList(roleMapper.findPage(offset, query.getSize()));
+        result.setList(roleMapper.findPage(offset, query.getSize(), name, status));
         return result;
+    }
+
+    @Override
+    public void updateStatus(Long id, Integer status) {
+        roleMapper.updateStatus(id, status);
+    }
+
+    @Override
+    public void replaceMenus(Long roleId, List<Long> menuIds) {
+        roleMapper.deleteRoleMenus(roleId);
+        if (menuIds == null) {
+            return;
+        }
+        for (Long menuId : menuIds) {
+            if (menuId != null) {
+                roleMapper.insertRoleMenu(roleId, menuId);
+            }
+        }
+    }
+
+    @Override
+    public List<Long> findMenuIds(Long roleId) {
+        return roleMapper.findMenuIds(roleId);
+    }
+
+    @Override
+    public long countUsers(Long roleId) {
+        return roleMapper.countUsers(roleId);
     }
 }

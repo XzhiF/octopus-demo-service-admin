@@ -64,6 +64,21 @@ public class MybatisMenuDao implements ResourceDao {
     }
 
     @Override
+    public int countChildren(Long id) {
+        return menuMapper.countChildren(id);
+    }
+
+    @Override
+    public int countRoleRefs(Long id) {
+        return menuMapper.countRoleRefs(id);
+    }
+
+    @Override
+    public int countByPerms(String perms, Long excludeId) {
+        return menuMapper.countByPerms(perms, excludeId);
+    }
+
+    @Override
     public List<SysResource> findVisibleByUserId(Long userId) {
         return menuMapper.findVisibleByUserId(userId);
     }

@@ -5,6 +5,7 @@ import com.octopus.demo.admin.dao.UserDao;
 import com.octopus.demo.admin.entity.SysResource;
 import com.octopus.demo.admin.entity.SysRole;
 import com.octopus.demo.admin.entity.SysUser;
+import com.octopus.demo.admin.exception.DisabledAccountException;
 import com.octopus.demo.admin.security.AuthContext;
 import com.octopus.demo.admin.security.JwtProperties;
 import com.octopus.demo.admin.vo.MenuVO;
@@ -38,8 +39,11 @@ public class AuthService {
             return Optional.empty();
         }
         SysUser user = userDao.findByUsername(username).orElse(null);
-        if (user == null || !isEnabled(user) || !PasswordUtils.matches(password, user.getPassword())) {
+        if (user == null || !PasswordUtils.matches(password, user.getPassword())) {
             return Optional.empty();
+        }
+        if (!isEnabled(user)) {
+            throw new DisabledAccountException("账号已停用");
         }
         return Optional.of(toContext(user));
     }

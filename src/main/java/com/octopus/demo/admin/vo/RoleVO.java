@@ -8,6 +8,8 @@ public class RoleVO {
     private Long id;
     private String name;
     private String code;
+    private Integer status;
+    private boolean builtIn;
     private List<ResourceVO> resources;
 
     public RoleVO() {}
@@ -17,6 +19,8 @@ public class RoleVO {
         vo.id = role.getId();
         vo.name = role.getName();
         vo.code = role.getCode();
+        vo.status = role.getStatus() == null ? 1 : role.getStatus();
+        vo.builtIn = "admin".equals(role.getCode());
         vo.resources = role.getResources() == null ? Collections.emptyList()
                 : role.getResources().stream().map(ResourceVO::from).toList();
         return vo;
@@ -35,6 +39,10 @@ public class RoleVO {
     public void setName(String name) { this.name = name; }
     public String getCode() { return code; }
     public void setCode(String code) { this.code = code; }
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
+    public boolean isBuiltIn() { return builtIn; }
+    public void setBuiltIn(boolean builtIn) { this.builtIn = builtIn; }
     public List<ResourceVO> getResources() { return resources; }
     public void setResources(List<ResourceVO> resources) { this.resources = resources; }
 }

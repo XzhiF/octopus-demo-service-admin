@@ -1,7 +1,6 @@
 package com.octopus.demo.admin.dao.impl;
 
 import com.octopus.demo.admin.dao.UserDao;
-import com.octopus.demo.admin.entity.SysRole;
 import com.octopus.demo.admin.entity.SysUser;
 import com.octopus.demo.admin.mapper.UserMapper;
 import com.octopus.demo.common.bean.PageQueryBean;
@@ -27,20 +26,7 @@ public class MybatisUserDao implements UserDao {
         } else {
             userMapper.update(user);
         }
-        bindRoles(user);
         return user;
-    }
-
-    private void bindRoles(SysUser user) {
-        if (user.getId() == null || user.getRoles() == null || user.getRoles().isEmpty()) {
-            return;
-        }
-        userMapper.deleteUserRoles(user.getId());
-        for (SysRole role : user.getRoles()) {
-            if (role != null && role.getId() != null) {
-                userMapper.insertUserRole(user.getId(), role.getId());
-            }
-        }
     }
 
     @Override
@@ -65,8 +51,8 @@ public class MybatisUserDao implements UserDao {
     }
 
     @Override
-    public PageResultBean<SysUser> findAll(PageQueryBean query) {
-        long total = userMapper.count();
+    public PageResultBean<SysUser> findAll(PageQueryBean query, String username, Integer status) {
+        long total = userMapper.count(username, status);
         long offset = (long) (query.getPage() - 1) * query.getSize();
         PageResultBean<SysUser> result = new PageResultBean<>();
         result.setCount(total);
@@ -74,7 +60,32 @@ public class MybatisUserDao implements UserDao {
             result.setList(List.of());
             return result;
         }
-        result.setList(userMapper.findPage(offset, query.getSize()));
+        List<SysUser> users = userMapper.findPage(offset, query.getSize(), username, status);
+        users.forEach(user -> user.setRoles(userMapper.findRolesByUserId(user.getId())));
+        result.setList(users);
         return result;
+    }
+
+    @Override
+    public void updateStatus(Long id, Integer status) {
+        userMapper.updateStatus(id, status);
+    }
+
+    @Override
+    public void updatePassword(Long id, String passwordHash) {
+        userMapper.updatePassword(id, passwordHash);
+    }
+
+    @Override
+    public void replaceRoles(Long userId, List<Long> roleIds) {
+        userMapper.deleteUserRoles(userId);
+        if (roleIds == null) {
+            return;
+        }
+        for (Long roleId : roleIds) {
+            if (roleId != null) {
+                userMapper.insertUserRole(userId, roleId);
+            }
+        }
     }
 }

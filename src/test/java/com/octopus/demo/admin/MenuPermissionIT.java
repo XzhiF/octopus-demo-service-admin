@@ -144,16 +144,16 @@ class MenuPermissionIT {
                 .andExpect(jsonPath("$.code").value(403))
                 .andExpect(jsonPath("$.msg").isNotEmpty());
 
-        mockMvc.perform(put("/api/users")
+        mockMvc.perform(put("/api/users/2")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"id":2,"username":"guest"}
+                                {"username":"guest"}
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
 
-        mockMvc.perform(post("/api/users/2/roles")
+        mockMvc.perform(put("/api/users/2/roles")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("[1]"))
@@ -169,7 +169,7 @@ class MenuPermissionIT {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403));
 
-        mockMvc.perform(post("/api/resources")
+        mockMvc.perform(post("/api/menus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

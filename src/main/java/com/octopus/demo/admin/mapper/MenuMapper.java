@@ -24,6 +24,15 @@ public interface MenuMapper {
 
     int deleteById(@Param("id") Long id);
 
+    /** Direct children of the node, used to block deleting a menu that still has a subtree. */
+    int countChildren(@Param("id") Long id);
+
+    /** sys_role_menu references, used to block deleting a granted menu. */
+    int countRoleRefs(@Param("id") Long id);
+
+    /** Global perms uniqueness check; {@code excludeId} skips the row being updated. */
+    int countByPerms(@Param("perms") String perms, @Param("excludeId") Long excludeId);
+
     /** Visible catalog/menu nodes (no buttons) granted to the user, ordered by sort. */
     List<SysResource> findVisibleByUserId(@Param("userId") Long userId);
 }

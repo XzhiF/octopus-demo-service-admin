@@ -7,6 +7,7 @@
         <id property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="code" column="code"/>
+        <result property="status" column="status"/>
         <collection property="resources" ofType="com.octopus.demo.admin.entity.SysResource">
             <id property="id" column="menu_id"/>
             <result property="parentId" column="menu_parent_id"/>
@@ -26,10 +27,11 @@
         <id property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="code" column="code"/>
+        <result property="status" column="status"/>
     </resultMap>
 
     <sql id="detailColumns">
-        SELECT r.id, r.name, r.code,
+        SELECT r.id, r.name, r.code, r.status,
                m.id AS menu_id, m.parent_id AS menu_parent_id, m.name AS menu_name,
                m.perms AS menu_perms, m.type AS menu_type, m.path AS menu_path,
                m.component AS menu_component, m.icon AS menu_icon, m.sort AS menu_sort,
@@ -50,23 +52,43 @@
     </select>
 
     <select id="findAll" resultMap="basicMap">
-        SELECT id, name, code FROM sys_role ORDER BY id
+        SELECT id, name, code, status FROM sys_role ORDER BY id
     </select>
 
+    <sql id="pageFilter">
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
     <select id="findPage" resultMap="basicMap">
-        SELECT id, name, code FROM sys_role ORDER BY id LIMIT #{size} OFFSET #{offset}
+        SELECT id, name, code, status FROM sys_role
+        <include refid="pageFilter"/>
+        ORDER BY id LIMIT #{size} OFFSET #{offset}
     </select>
 
     <select id="count" resultType="long">
         SELECT COUNT(*) FROM sys_role
+        <include refid="pageFilter"/>
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sys_role (name, code, status) VALUES (#{name}, #{code}, 1)
+        INSERT INTO sys_role (name, code, status) VALUES (#{name}, #{code}, COALESCE(#{status}, 1))
     </insert>
 
     <update id="update">
-        UPDATE sys_role SET name = #{name}, code = #{code} WHERE id = #{id}
+        UPDATE sys_role
+        SET name = #{name}, code = #{code}, status = COALESCE(#{status}, status)
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE sys_role SET status = #{status} WHERE id = #{id}
     </update>
 
     <delete id="deleteById">
@@ -80,5 +102,13 @@
     <insert id="insertRoleMenu">
         INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (#{roleId}, #{menuId})
     </insert>
+
+    <select id="findMenuIds" resultType="long">
+        SELECT menu_id FROM sys_role_menu WHERE role_id = #{roleId} ORDER BY menu_id
+    </select>
+
+    <select id="countUsers" resultType="long">
+        SELECT COUNT(*) FROM sys_user_role WHERE role_id = #{roleId}
+    </select>
 
 </mapper>
