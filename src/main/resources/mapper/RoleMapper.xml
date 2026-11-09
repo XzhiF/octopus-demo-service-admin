@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.RoleMapper">
+
+    <resultMap id="detailMap" type="com.octopus.demo.admin.entity.SysRole">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <collection property="resources" ofType="com.octopus.demo.admin.entity.SysResource">
+            <id property="id" column="menu_id"/>
+            <result property="parentId" column="menu_parent_id"/>
+            <result property="name" column="menu_name"/>
+            <result property="code" column="menu_perms"/>
+            <result property="type" column="menu_type"/>
+            <result property="path" column="menu_path"/>
+            <result property="component" column="menu_component"/>
+            <result property="icon" column="menu_icon"/>
+            <result property="sort" column="menu_sort"/>
+            <result property="visible" column="menu_visible"/>
+            <result property="status" column="menu_status"/>
+        </collection>
+    </resultMap>
+
+    <resultMap id="basicMap" type="com.octopus.demo.admin.entity.SysRole">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+    </resultMap>
+
+    <sql id="detailColumns">
+        SELECT r.id, r.name, r.code,
+               m.id AS menu_id, m.parent_id AS menu_parent_id, m.name AS menu_name,
+               m.perms AS menu_perms, m.type AS menu_type, m.path AS menu_path,
+               m.component AS menu_component, m.icon AS menu_icon, m.sort AS menu_sort,
+               m.visible AS menu_visible, m.status AS menu_status
+        FROM sys_role r
+        LEFT JOIN sys_role_menu rm ON rm.role_id = r.id
+        LEFT JOIN sys_menu m ON m.id = rm.menu_id AND m.status = 1
+    </sql>
+
+    <select id="findById" resultMap="detailMap">
+        <include refid="detailColumns"/>
+        WHERE r.id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="detailMap">
+        <include refid="detailColumns"/>
+        WHERE r.code = #{code}
+    </select>
+
+    <select id="findAll" resultMap="basicMap">
+        SELECT id, name, code FROM sys_role ORDER BY id
+    </select>
+
+    <select id="findPage" resultMap="basicMap">
+        SELECT id, name, code FROM sys_role ORDER BY id LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_role
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_role (name, code, status) VALUES (#{name}, #{code}, 1)
+    </insert>
+
+    <update id="update">
+        UPDATE sys_role SET name = #{name}, code = #{code} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_role WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteRoleMenus">
+        DELETE FROM sys_role_menu WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="insertRoleMenu">
+        INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (#{roleId}, #{menuId})
+    </insert>
+
+</mapper>

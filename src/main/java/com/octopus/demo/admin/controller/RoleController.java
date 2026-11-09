@@ -6,6 +6,7 @@ import com.octopus.demo.admin.vo.RoleVO;
 import com.octopus.demo.common.bean.R;
 import com.octopus.demo.common.bean.PageQueryBean;
 import com.octopus.demo.common.bean.PageResultBean;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,22 +22,26 @@ public class RoleController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('perm:sys:role:add')")
     public R<RoleVO> create(@RequestBody SysRole role) {
         return R.ok(RoleVO.from(roleService.create(role)));
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('perm:sys:role:update')")
     public R<RoleVO> update(@RequestBody SysRole role) {
         return R.ok(RoleVO.from(roleService.update(role)));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('perm:sys:role:delete')")
     public R<Void> delete(@PathVariable Long id) {
         roleService.delete(id);
         return R.ok();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('perm:sys:role:list')")
     public R<RoleVO> findById(@PathVariable Long id) {
         SysRole role = roleService.findById(id);
         if (role == null) return R.fail(404, "role not found");
@@ -44,6 +49,7 @@ public class RoleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('perm:sys:role:list')")
     public R<PageResultBean<RoleVO>> findAll(PageQueryBean query) {
         PageResultBean<SysRole> result = roleService.findAll(query);
         List<RoleVO> voList = result.getList().stream()
@@ -55,6 +61,7 @@ public class RoleController {
     }
 
     @PostMapping("/{id}/resources")
+    @PreAuthorize("hasAuthority('perm:sys:role:update')")
     public R<RoleVO> assignResources(@PathVariable Long id, @RequestBody List<Long> resourceIds) {
         SysRole role = roleService.assignResources(id, resourceIds);
         if (role == null) return R.fail(404, "role not found");

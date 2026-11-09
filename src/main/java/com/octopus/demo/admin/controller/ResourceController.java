@@ -6,6 +6,7 @@ import com.octopus.demo.admin.vo.ResourceVO;
 import com.octopus.demo.common.bean.R;
 import com.octopus.demo.common.bean.PageQueryBean;
 import com.octopus.demo.common.bean.PageResultBean;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,22 +22,26 @@ public class ResourceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('perm:sys:menu:add')")
     public R<ResourceVO> create(@RequestBody SysResource resource) {
         return R.ok(ResourceVO.from(resourceService.create(resource)));
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('perm:sys:menu:update')")
     public R<ResourceVO> update(@RequestBody SysResource resource) {
         return R.ok(ResourceVO.from(resourceService.update(resource)));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('perm:sys:menu:delete')")
     public R<Void> delete(@PathVariable Long id) {
         resourceService.delete(id);
         return R.ok();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('perm:sys:menu:list')")
     public R<ResourceVO> findById(@PathVariable Long id) {
         SysResource resource = resourceService.findById(id);
         if (resource == null) return R.fail(404, "resource not found");
@@ -44,6 +49,7 @@ public class ResourceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('perm:sys:menu:list')")
     public R<PageResultBean<ResourceVO>> findAll(PageQueryBean query) {
         PageResultBean<SysResource> result = resourceService.findAll(query);
         List<ResourceVO> voList = result.getList().stream()

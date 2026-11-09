@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.MenuMapper">
+
+    <resultMap id="menuMap" type="com.octopus.demo.admin.entity.SysResource">
+        <id property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="perms"/>
+        <result property="type" column="type"/>
+        <result property="path" column="path"/>
+        <result property="component" column="component"/>
+        <result property="icon" column="icon"/>
+        <result property="sort" column="sort"/>
+        <result property="visible" column="visible"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, parent_id, name, type, path, component, icon, perms, sort, visible, status
+    </sql>
+
+    <select id="findById" resultMap="menuMap">
+        SELECT <include refid="columns"/> FROM sys_menu WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="menuMap">
+        SELECT <include refid="columns"/> FROM sys_menu WHERE perms = #{code} LIMIT 1
+    </select>
+
+    <select id="findAll" resultMap="menuMap">
+        SELECT <include refid="columns"/> FROM sys_menu ORDER BY sort, id
+    </select>
+
+    <select id="findPage" resultMap="menuMap">
+        SELECT <include refid="columns"/> FROM sys_menu ORDER BY sort, id LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_menu
+    </select>
+
+    <select id="findVisibleByUserId" resultMap="menuMap">
+        SELECT DISTINCT m.id, m.parent_id, m.name, m.type, m.path, m.component,
+                        m.icon, m.perms, m.sort, m.visible, m.status
+        FROM sys_menu m
+        JOIN sys_role_menu rm ON rm.menu_id = m.id
+        JOIN sys_role r ON r.id = rm.role_id AND r.status = 1
+        JOIN sys_user_role ur ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+          AND m.status = 1
+          AND m.visible = 1
+          AND m.type IN ('catalog', 'menu')
+        ORDER BY m.sort, m.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_menu (parent_id, name, type, path, component, icon, perms,
+                              sort, visible, status)
+        VALUES (COALESCE(#{parentId}, 0), #{name}, #{type}, #{path}, #{component}, #{icon},
+                #{code}, COALESCE(#{sort}, 0), COALESCE(#{visible}, 1), COALESCE(#{status}, 1))
+    </insert>
+
+    <update id="update">
+        UPDATE sys_menu
+        SET parent_id = COALESCE(#{parentId}, parent_id),
+            name = #{name},
+            type = #{type},
+            path = #{path},
+            component = #{component},
+            icon = #{icon},
+            perms = #{code},
+            sort = COALESCE(#{sort}, sort),
+            visible = COALESCE(#{visible}, visible),
+            status = COALESCE(#{status}, status)
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_menu WHERE id = #{id}
+    </delete>
+
+</mapper>

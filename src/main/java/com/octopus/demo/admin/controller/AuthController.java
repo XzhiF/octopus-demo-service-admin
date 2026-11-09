@@ -1,21 +1,29 @@
 package com.octopus.demo.admin.controller;
 
-import com.octopus.demo.admin.entity.SysUser;
-import com.octopus.demo.admin.entity.SysResource;
+import com.octopus.demo.admin.security.AuthContext;
 import com.octopus.demo.admin.service.AuthService;
 import com.octopus.demo.admin.vo.AuthVO;
-import com.octopus.demo.admin.vo.UserVO;
-import com.octopus.demo.admin.vo.ResourceVO;
+import com.octopus.demo.admin.vo.CurrentUserVO;
+import com.octopus.demo.admin.vo.MenuVO;
 import com.octopus.demo.common.bean.R;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private static final String INVALID_CREDENTIALS = "用户名或密码错误";
+
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
@@ -23,34 +31,32 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public R<AuthVO> login(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String password = body.get("password");
-        String token = authService.login(username, password);
-        if (token == null) {
-            return R.fail(401, "invalid username or password");
-        }
-        SysUser user = authService.getCurrentUser(token);
-        return R.ok(AuthVO.of(token, UserVO.from(user)));
+    public ResponseEntity<R<AuthVO>> login(@RequestBody Map<String, String> body) {
+        return authService.authenticate(body.get("username"), body.get("password"))
+                .map(context -> {
+                    String token = authService.issueToken(context.userId());
+                    return ResponseEntity.ok(R.ok(AuthVO.of(token, authService.expirationSeconds(), context)));
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(R.fail(401, INVALID_CREDENTIALS)));
+    }
+
+    @GetMapping("/me")
+    public R<CurrentUserVO> me(Authentication authentication) {
+        return R.ok(CurrentUserVO.from(principal(authentication)));
     }
 
     @PostMapping("/logout")
-    public R<Void> logout(@RequestHeader("X-Token") String token) {
-        authService.logout(token);
+    public R<Void> logout() {
         return R.ok();
     }
 
-    @GetMapping("/current")
-    public R<UserVO> current(@RequestHeader("X-Token") String token) {
-        SysUser user = authService.getCurrentUser(token);
-        if (user == null) return R.fail(401, "not logged in");
-        return R.ok(UserVO.from(user));
+    @GetMapping("/menus")
+    public R<List<MenuVO>> menus(Authentication authentication) {
+        return R.ok(authService.menuTree(principal(authentication).userId()));
     }
 
-    @GetMapping("/resources")
-    public R<List<ResourceVO>> resources(@RequestHeader("X-Token") String token) {
-        List<SysResource> list = authService.getUserResources(token);
-        if (list.isEmpty()) return R.fail(401, "not logged in");
-        return R.ok(list.stream().map(ResourceVO::from).collect(Collectors.toList()));
+    private AuthContext principal(Authentication authentication) {
+        return (AuthContext) authentication.getPrincipal();
     }
 }

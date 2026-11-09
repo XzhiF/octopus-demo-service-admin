@@ -22,6 +22,13 @@ public class RoleVO {
         return vo;
     }
 
+    public static RoleVO codeOnly(String code) {
+        RoleVO vo = new RoleVO();
+        vo.code = code;
+        vo.resources = Collections.emptyList();
+        return vo;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }

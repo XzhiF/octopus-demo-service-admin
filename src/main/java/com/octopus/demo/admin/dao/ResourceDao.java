@@ -12,4 +12,7 @@ public interface ResourceDao {
     java.util.List<SysResource> findAll();
     void deleteById(Long id);
     PageResultBean<SysResource> findAll(PageQueryBean query);
+
+    /** Visible catalog/menu nodes granted to the user, ordered by sort. */
+    java.util.List<SysResource> findVisibleByUserId(Long userId);
 }

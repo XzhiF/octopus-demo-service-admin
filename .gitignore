@@ -44,3 +44,6 @@ out/
 .env
 .env.local
 .env.*.local
+
+# Local run state
+scripts/.run/

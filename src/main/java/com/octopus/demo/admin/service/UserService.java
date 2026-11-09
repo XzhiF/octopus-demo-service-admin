@@ -6,6 +6,7 @@ import com.octopus.demo.admin.entity.SysUser;
 import com.octopus.demo.admin.entity.SysRole;
 import com.octopus.demo.common.bean.PageQueryBean;
 import com.octopus.demo.common.bean.PageResultBean;
+import com.octopus.demo.common.util.PasswordUtils;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -22,10 +23,18 @@ public class UserService {
     }
 
     public SysUser create(SysUser user) {
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("password is required");
+        }
+        user.setPassword(PasswordUtils.encode(user.getPassword()));
         return userDao.save(user);
     }
 
     public SysUser update(SysUser user) {
+        String rawPassword = user.getPassword();
+        // Blank means "keep the stored hash": the mapper COALESCEs a null password_hash to itself.
+        user.setPassword(rawPassword == null || rawPassword.isBlank()
+                ? null : PasswordUtils.encode(rawPassword));
         return userDao.save(user);
     }
 

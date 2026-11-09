@@ -1,0 +1,21 @@
+server:
+  port: ${SERVICE_ADMIN_PORT:18080}
+
+spring:
+  application:
+    name: octopus-demo-service-admin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:13306}/octopus_demo_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:octopus}
+    password: ${MYSQL_PASSWORD:octopus}
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:/mapper/*.xml
+
+octopus:
+  jwt:
+    secret-key: ${JWT_SECRET:octopus-demo-system-jwt-secret-key-change-me}
+    expiration-days: ${JWT_EXPIRATION_DAYS:7}
