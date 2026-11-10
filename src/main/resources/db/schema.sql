@@ -109,6 +109,43 @@ CREATE TABLE IF NOT EXISTS sys_role_menu (
     CONSTRAINT fk_sys_role_menu_menu FOREIGN KEY (menu_id) REFERENCES sys_menu (id) ON DELETE RESTRICT
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS sys_job (
+    id         BIGINT       NOT NULL AUTO_INCREMENT,
+    job_name   VARCHAR(64)  NOT NULL,
+    job_group  VARCHAR(64)  NOT NULL DEFAULT 'DEFAULT',
+    bean_name  VARCHAR(128) NOT NULL,
+    cron       VARCHAR(128) NOT NULL,
+    params     VARCHAR(512)          DEFAULT NULL,
+    status     TINYINT      NOT NULL DEFAULT 1 COMMENT '0=paused, 1=enabled',
+    remark     VARCHAR(255)          DEFAULT NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_sys_job_name_group (job_name, job_group)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sys_job_log (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    job_id       BIGINT                DEFAULT NULL,
+    job_name     VARCHAR(64)           DEFAULT NULL,
+    status       TINYINT      NOT NULL COMMENT '0=failure, 1=success',
+    message      VARCHAR(500)          DEFAULT NULL,
+    started_at   DATETIME     NOT NULL,
+    finished_at  DATETIME              DEFAULT NULL,
+    duration_ms  BIGINT                DEFAULT NULL,
+    trigger_type VARCHAR(16)  NOT NULL DEFAULT 'cron' COMMENT 'cron | manual',
+    PRIMARY KEY (id),
+    KEY idx_sys_job_log_job_started (job_id, started_at),
+    KEY idx_sys_job_log_status_started (status, started_at),
+    KEY idx_sys_job_log_started (started_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- Built-in sample jobs; paused by default so they produce no log noise until enabled.
+INSERT INTO sys_job (job_name, job_group, bean_name, cron, params, status, remark)
+VALUES ('demoHeartbeatJob', 'DEFAULT', 'demoHeartbeatJob', '0/30 * * * * ?', NULL, 0, '心跳示例任务，每次执行写入 heartbeat'),
+       ('jobLogCleanupJob', 'DEFAULT', 'jobLogCleanupJob', '0 0 3 * * ?', NULL, 0, '执行日志清理，保留天数取 sys.job.log.retention-days')
+ON DUPLICATE KEY UPDATE remark = VALUES(remark);
+
 -- Seed roles (users and password hashes are created by BootstrapDataInitializer).
 INSERT INTO sys_role (id, name, code, status, remark)
 VALUES (1, '管理员', 'admin', 1, '系统管理员，拥有全部菜单权限'),
@@ -152,6 +189,17 @@ VALUES (7, 5, '数据字典', 'menu', '/config/dicts', 'config/dicts/index', 'No
 ON DUPLICATE KEY UPDATE name = VALUES(name), path = VALUES(path), component = VALUES(component),
                         icon = VALUES(icon), perms = VALUES(perms), sort = VALUES(sort);
 
+-- System monitor catalog holding the scheduled job page and its buttons.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, perms, sort, visible, status)
+VALUES (8, 0, '系统监控', 'catalog', '/monitor', NULL, 'Monitor', NULL, 3, 1, 1),
+       (9, 8, '定时任务', 'menu', '/monitor/jobs', 'monitor/jobs/index', 'Timer', 'sys:job:list', 1, 1, 1),
+       (91, 9, '任务新增', 'button', NULL, NULL, NULL, 'sys:job:add', 1, 1, 1),
+       (92, 9, '任务删除', 'button', NULL, NULL, NULL, 'sys:job:delete', 2, 1, 1),
+       (93, 9, '任务修改', 'button', NULL, NULL, NULL, 'sys:job:edit', 3, 1, 1),
+       (94, 9, '立即执行', 'button', NULL, NULL, NULL, 'sys:job:run', 4, 1, 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), path = VALUES(path), component = VALUES(component),
+                        icon = VALUES(icon), perms = VALUES(perms), sort = VALUES(sort);
+
 -- Seed dictionary: user sex (男/女/未知).
 INSERT INTO sys_dict_type (id, dict_type, dict_name, status, remark)
 VALUES (1, 'sys_user_sex', '用户性别', 1, '用户性别列表')
@@ -166,7 +214,153 @@ ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label), dict_value = VALUES(dic
 
 -- admin: all menus and buttons. guest: 系统管理 catalog + 用户管理.
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
+VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9),
        (1, 11), (1, 12), (1, 13), (1, 21), (1, 22), (1, 23), (1, 31), (1, 32), (1, 33),
        (1, 51), (1, 52), (1, 53), (1, 61), (1, 62), (1, 63),
+       (1, 91), (1, 92), (1, 93), (1, 94),
        (2, 1), (2, 2);
+
+-- ---------------------------------------------------------------------------
+-- Quartz 2.3 JDBC JobStore tables (official tables_mysql_innodb.sql).
+-- Kept in this same script so containers and Testcontainers share one DDL.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS QRTZ_JOB_DETAILS (
+    SCHED_NAME        VARCHAR(120) NOT NULL,
+    JOB_NAME          VARCHAR(190) NOT NULL,
+    JOB_GROUP         VARCHAR(190) NOT NULL,
+    DESCRIPTION       VARCHAR(250)          DEFAULT NULL,
+    JOB_CLASS_NAME    VARCHAR(250) NOT NULL,
+    IS_DURABLE        VARCHAR(1)   NOT NULL,
+    IS_NONCONCURRENT  VARCHAR(1)   NOT NULL,
+    IS_UPDATE_DATA    VARCHAR(1)   NOT NULL,
+    REQUESTS_RECOVERY VARCHAR(1)   NOT NULL,
+    JOB_DATA          BLOB                  DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, JOB_NAME, JOB_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_TRIGGERS (
+    SCHED_NAME     VARCHAR(120) NOT NULL,
+    TRIGGER_NAME   VARCHAR(190) NOT NULL,
+    TRIGGER_GROUP  VARCHAR(190) NOT NULL,
+    JOB_NAME       VARCHAR(190) NOT NULL,
+    JOB_GROUP      VARCHAR(190) NOT NULL,
+    DESCRIPTION    VARCHAR(250)          DEFAULT NULL,
+    NEXT_FIRE_TIME BIGINT(13)            DEFAULT NULL,
+    PREV_FIRE_TIME BIGINT(13)            DEFAULT NULL,
+    PRIORITY       INT                   DEFAULT NULL,
+    TRIGGER_STATE  VARCHAR(16)  NOT NULL,
+    TRIGGER_TYPE   VARCHAR(8)   NOT NULL,
+    START_TIME     BIGINT(13)   NOT NULL,
+    END_TIME       BIGINT(13)            DEFAULT NULL,
+    CALENDAR_NAME  VARCHAR(190)          DEFAULT NULL,
+    MISFIRE_INSTR  SMALLINT(2)           DEFAULT NULL,
+    JOB_DATA       BLOB                  DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    CONSTRAINT fk_qrtz_triggers_job FOREIGN KEY (SCHED_NAME, JOB_NAME, JOB_GROUP)
+        REFERENCES QRTZ_JOB_DETAILS (SCHED_NAME, JOB_NAME, JOB_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_SIMPLE_TRIGGERS (
+    SCHED_NAME      VARCHAR(120) NOT NULL,
+    TRIGGER_NAME    VARCHAR(190) NOT NULL,
+    TRIGGER_GROUP   VARCHAR(190) NOT NULL,
+    REPEAT_COUNT    BIGINT(7)    NOT NULL,
+    REPEAT_INTERVAL BIGINT(12)   NOT NULL,
+    TIMES_TRIGGERED BIGINT(10)   NOT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    CONSTRAINT fk_qrtz_simple_triggers FOREIGN KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+        REFERENCES QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_CRON_TRIGGERS (
+    SCHED_NAME      VARCHAR(120) NOT NULL,
+    TRIGGER_NAME    VARCHAR(190) NOT NULL,
+    TRIGGER_GROUP   VARCHAR(190) NOT NULL,
+    CRON_EXPRESSION VARCHAR(120) NOT NULL,
+    TIME_ZONE_ID    VARCHAR(80)           DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    CONSTRAINT fk_qrtz_cron_triggers FOREIGN KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+        REFERENCES QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_SIMPROP_TRIGGERS (
+    SCHED_NAME    VARCHAR(120)   NOT NULL,
+    TRIGGER_NAME  VARCHAR(190)   NOT NULL,
+    TRIGGER_GROUP VARCHAR(190)   NOT NULL,
+    STR_PROP_1    VARCHAR(512)            DEFAULT NULL,
+    STR_PROP_2    VARCHAR(512)            DEFAULT NULL,
+    STR_PROP_3    VARCHAR(512)            DEFAULT NULL,
+    INT_PROP_1    INT                     DEFAULT NULL,
+    INT_PROP_2    INT                     DEFAULT NULL,
+    LONG_PROP_1   BIGINT                  DEFAULT NULL,
+    LONG_PROP_2   BIGINT                  DEFAULT NULL,
+    DEC_PROP_1    NUMERIC(13, 4)          DEFAULT NULL,
+    DEC_PROP_2    NUMERIC(13, 4)          DEFAULT NULL,
+    BOOL_PROP_1   VARCHAR(1)              DEFAULT NULL,
+    BOOL_PROP_2   VARCHAR(1)              DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    CONSTRAINT fk_qrtz_simprop_triggers FOREIGN KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+        REFERENCES QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_BLOB_TRIGGERS (
+    SCHED_NAME    VARCHAR(120) NOT NULL,
+    TRIGGER_NAME  VARCHAR(190) NOT NULL,
+    TRIGGER_GROUP VARCHAR(190) NOT NULL,
+    BLOB_DATA     BLOB                  DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    INDEX (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP),
+    CONSTRAINT fk_qrtz_blob_triggers FOREIGN KEY (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+        REFERENCES QRTZ_TRIGGERS (SCHED_NAME, TRIGGER_NAME, TRIGGER_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_CALENDARS (
+    SCHED_NAME    VARCHAR(120) NOT NULL,
+    CALENDAR_NAME VARCHAR(190) NOT NULL,
+    CALENDAR      BLOB         NOT NULL,
+    PRIMARY KEY (SCHED_NAME, CALENDAR_NAME)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_PAUSED_TRIGGER_GRPS (
+    SCHED_NAME    VARCHAR(120) NOT NULL,
+    TRIGGER_GROUP VARCHAR(190) NOT NULL,
+    PRIMARY KEY (SCHED_NAME, TRIGGER_GROUP)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_FIRED_TRIGGERS (
+    SCHED_NAME        VARCHAR(120) NOT NULL,
+    ENTRY_ID          VARCHAR(95)  NOT NULL,
+    TRIGGER_NAME      VARCHAR(190) NOT NULL,
+    TRIGGER_GROUP     VARCHAR(190) NOT NULL,
+    INSTANCE_NAME     VARCHAR(190) NOT NULL,
+    FIRED_TIME        BIGINT(13)   NOT NULL,
+    SCHED_TIME        BIGINT(13)   NOT NULL,
+    PRIORITY          INT          NOT NULL,
+    STATE             VARCHAR(16)  NOT NULL,
+    JOB_NAME          VARCHAR(190)          DEFAULT NULL,
+    JOB_GROUP         VARCHAR(190)          DEFAULT NULL,
+    IS_NONCONCURRENT  VARCHAR(1)            DEFAULT NULL,
+    REQUESTS_RECOVERY VARCHAR(1)            DEFAULT NULL,
+    PRIMARY KEY (SCHED_NAME, ENTRY_ID)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_SCHEDULER_STATE (
+    SCHED_NAME        VARCHAR(120) NOT NULL,
+    INSTANCE_NAME     VARCHAR(190) NOT NULL,
+    LAST_CHECKIN_TIME BIGINT(13)   NOT NULL,
+    CHECKIN_INTERVAL  BIGINT(13)   NOT NULL,
+    PRIMARY KEY (SCHED_NAME, INSTANCE_NAME)
+) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS QRTZ_LOCKS (
+    SCHED_NAME VARCHAR(120) NOT NULL,
+    LOCK_NAME  VARCHAR(40)  NOT NULL,
+    PRIMARY KEY (SCHED_NAME, LOCK_NAME)
+) ENGINE = InnoDB;
+
+INSERT IGNORE INTO QRTZ_LOCKS (SCHED_NAME, LOCK_NAME)
+VALUES ('quartzScheduler', 'TRIGGER_ACCESS'),
+       ('quartzScheduler', 'JOB_ACCESS'),
+       ('quartzScheduler', 'CALENDAR_ACCESS'),
+       ('quartzScheduler', 'STATE_ACCESS'),
+       ('quartzScheduler', 'MISFIRE_ACCESS');

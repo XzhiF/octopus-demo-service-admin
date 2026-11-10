@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.JobMapper">
+
+    <resultMap id="jobMap" type="com.octopus.demo.admin.entity.SysJob">
+        <id property="id" column="id"/>
+        <result property="jobName" column="job_name"/>
+        <result property="jobGroup" column="job_group"/>
+        <result property="beanName" column="bean_name"/>
+        <result property="cron" column="cron"/>
+        <result property="params" column="params"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="lastRunAt" column="last_run_at"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, job_name, job_group, bean_name, cron, params, status, remark, created_at, updated_at
+    </sql>
+
+    <sql id="filters">
+        <if test="jobName != null and jobName != ''">
+            AND job_name LIKE CONCAT('%', #{jobName}, '%')
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </sql>
+
+    <select id="findById" resultMap="jobMap">
+        SELECT <include refid="columns"/> FROM sys_job WHERE id = #{id}
+    </select>
+
+    <select id="findPage" resultMap="jobMap">
+        SELECT <include refid="columns"/>,
+               (SELECT MAX(l.started_at) FROM sys_job_log l WHERE l.job_id = sys_job.id) AS last_run_at
+        FROM sys_job
+        WHERE 1 = 1
+        <include refid="filters"/>
+        ORDER BY id
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_job
+        WHERE 1 = 1
+        <include refid="filters"/>
+    </select>
+
+    <select id="findAllEnabled" resultMap="jobMap">
+        SELECT <include refid="columns"/> FROM sys_job WHERE status = 1 ORDER BY id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_job (job_name, job_group, bean_name, cron, params, status, remark)
+        VALUES (#{jobName}, #{jobGroup}, #{beanName}, #{cron}, #{params}, #{status}, #{remark})
+    </insert>
+
+    <update id="update">
+        UPDATE sys_job
+        SET job_name   = #{jobName},
+            job_group  = #{jobGroup},
+            bean_name  = #{beanName},
+            cron       = #{cron},
+            params     = #{params},
+            status     = #{status},
+            remark     = #{remark}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_job WHERE id = #{id}
+    </delete>
+
+    <select id="countByNameAndGroup" resultType="int">
+        SELECT COUNT(*) FROM sys_job
+        WHERE job_name = #{jobName} AND job_group = #{jobGroup}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+</mapper>
