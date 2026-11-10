@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.dto.PasswordRequest;
 import com.octopus.demo.admin.dto.StatusRequest;
 import com.octopus.demo.admin.dto.UserSaveRequest;
@@ -32,18 +33,21 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('perm:sys:user:add')")
+    @OperLog(title = "新增用户", module = "user")
     public R<UserVO> create(@RequestBody UserSaveRequest request) {
         return R.ok(UserVO.from(userService.create(request)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:user:update')")
+    @OperLog(title = "修改用户", module = "user")
     public R<UserVO> update(@PathVariable Long id, @RequestBody UserSaveRequest request) {
         return R.ok(UserVO.from(userService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:user:delete')")
+    @OperLog(title = "删除用户", module = "user")
     public R<Void> delete(@PathVariable Long id, Authentication authentication) {
         userService.delete(id, currentUserId(authentication));
         return R.ok();
@@ -73,12 +77,14 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority('perm:sys:user:update')")
+    @OperLog(title = "用户状态变更", module = "user")
     public R<UserVO> updateStatus(@PathVariable Long id, @RequestBody StatusRequest request) {
         return R.ok(UserVO.from(userService.updateStatus(id, request.status())));
     }
 
     @PutMapping("/{id}/password")
     @PreAuthorize("hasAuthority('perm:sys:user:update')")
+    @OperLog(title = "重置用户密码", module = "user")
     public R<Void> resetPassword(@PathVariable Long id, @RequestBody PasswordRequest request) {
         userService.resetPassword(id, request.password());
         return R.ok();
@@ -94,6 +100,7 @@ public class UserController {
 
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasAuthority('perm:sys:user:update')")
+    @OperLog(title = "用户授权", module = "grant")
     public R<UserVO> assignRoles(@PathVariable Long id, @RequestBody List<Long> roleIds) {
         return R.ok(UserVO.from(grantService.replaceUserRoles(id, roleIds)));
     }

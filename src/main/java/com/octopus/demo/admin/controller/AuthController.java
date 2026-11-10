@@ -5,7 +5,10 @@ import com.octopus.demo.admin.service.AuthService;
 import com.octopus.demo.admin.vo.AuthVO;
 import com.octopus.demo.admin.vo.CurrentUserVO;
 import com.octopus.demo.admin.vo.MenuVO;
+import com.octopus.demo.admin.web.ClientIpResolver;
 import com.octopus.demo.common.bean.R;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,8 +25,6 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private static final String INVALID_CREDENTIALS = "用户名或密码错误";
-
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
@@ -31,14 +32,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<R<AuthVO>> login(@RequestBody Map<String, String> body) {
-        return authService.authenticate(body.get("username"), body.get("password"))
+    public ResponseEntity<R<AuthVO>> login(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        String ip = ClientIpResolver.resolve(request);
+        String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
+        return authService.authenticate(body.get("username"), body.get("password"), ip, userAgent)
                 .map(context -> {
                     String token = authService.issueToken(context.userId());
                     return ResponseEntity.ok(R.ok(AuthVO.of(token, authService.expirationSeconds(), context)));
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(R.fail(401, INVALID_CREDENTIALS)));
+                        .body(R.fail(401, "用户名或密码错误")));
     }
 
     @GetMapping("/me")

@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.dto.ConfigRequest;
 import com.octopus.demo.admin.entity.SysConfig;
 import com.octopus.demo.admin.service.ConfigService;
@@ -52,18 +53,21 @@ public class ConfigController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('perm:sys:config:add')")
+    @OperLog(title = "新增参数", module = "config")
     public R<ConfigVO> create(@RequestBody ConfigRequest request) {
         return R.ok(ConfigVO.from(configService.create(request)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:config:edit')")
+    @OperLog(title = "修改参数", module = "config")
     public R<ConfigVO> update(@PathVariable Long id, @RequestBody ConfigRequest request) {
         return R.ok(ConfigVO.from(configService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:config:delete')")
+    @OperLog(title = "删除参数", module = "config")
     public R<Void> delete(@PathVariable Long id) {
         configService.delete(id);
         return R.ok();

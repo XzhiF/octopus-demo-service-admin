@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.dto.MenuRequest;
 import com.octopus.demo.admin.entity.SysResource;
 import com.octopus.demo.admin.service.MenuService;
@@ -35,6 +36,7 @@ public class MenuController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('perm:sys:menu:add')")
+    @OperLog(title = "新增菜单", module = "menu")
     public R<MenuVO> create(@RequestBody MenuRequest request) {
         SysResource created = menuService.create(request);
         return R.ok(MenuVO.from(created));
@@ -42,6 +44,7 @@ public class MenuController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:menu:update')")
+    @OperLog(title = "修改菜单", module = "menu")
     public R<MenuVO> update(@PathVariable Long id, @RequestBody MenuRequest request) {
         SysResource updated = menuService.update(id, request);
         return R.ok(MenuVO.from(updated));
@@ -49,6 +52,7 @@ public class MenuController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:menu:delete')")
+    @OperLog(title = "删除菜单", module = "menu")
     public R<Void> delete(@PathVariable Long id) {
         menuService.delete(id);
         return R.ok();

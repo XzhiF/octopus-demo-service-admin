@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.dto.JobRequest;
 import com.octopus.demo.admin.entity.SysJob;
 import com.octopus.demo.admin.entity.SysJobLog;
@@ -51,18 +52,21 @@ public class JobController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('perm:sys:job:add')")
+    @OperLog(title = "新增任务", module = "job")
     public R<JobVO> create(@RequestBody JobRequest request) {
         return R.ok(JobVO.from(jobService.create(request)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:job:edit')")
+    @OperLog(title = "修改任务", module = "job")
     public R<JobVO> update(@PathVariable Long id, @RequestBody JobRequest request) {
         return R.ok(JobVO.from(jobService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:job:delete')")
+    @OperLog(title = "删除任务", module = "job")
     public R<Void> delete(@PathVariable Long id) {
         jobService.delete(id);
         return R.ok();
@@ -70,18 +74,21 @@ public class JobController {
 
     @PostMapping("/{id}/pause")
     @PreAuthorize("hasAuthority('perm:sys:job:edit')")
+    @OperLog(title = "暂停任务", module = "job")
     public R<JobVO> pause(@PathVariable Long id) {
         return R.ok(JobVO.from(jobService.pause(id)));
     }
 
     @PostMapping("/{id}/resume")
     @PreAuthorize("hasAuthority('perm:sys:job:edit')")
+    @OperLog(title = "恢复任务", module = "job")
     public R<JobVO> resume(@PathVariable Long id) {
         return R.ok(JobVO.from(jobService.resume(id)));
     }
 
     @PostMapping("/{id}/run")
     @PreAuthorize("hasAuthority('perm:sys:job:run')")
+    @OperLog(title = "立即执行任务", module = "job")
     public R<JobVO> run(@PathVariable Long id) {
         return R.ok(JobVO.from(jobService.run(id)));
     }

@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.entity.SysRole;
 import com.octopus.demo.admin.service.GrantService;
 import com.octopus.demo.admin.service.RoleService;
@@ -27,18 +28,21 @@ public class RoleController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('perm:sys:role:add')")
+    @OperLog(title = "新增角色", module = "role")
     public R<RoleVO> create(@RequestBody SysRole role) {
         return R.ok(RoleVO.from(roleService.create(role)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:role:update')")
+    @OperLog(title = "修改角色", module = "role")
     public R<RoleVO> update(@PathVariable Long id, @RequestBody SysRole role) {
         return R.ok(RoleVO.from(roleService.update(id, role)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('perm:sys:role:delete')")
+    @OperLog(title = "删除角色", module = "role")
     public R<Void> delete(@PathVariable Long id) {
         roleService.delete(id);
         return R.ok();
@@ -46,6 +50,7 @@ public class RoleController {
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority('perm:sys:role:update')")
+    @OperLog(title = "角色状态变更", module = "role")
     public R<RoleVO> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         return R.ok(RoleVO.from(roleService.updateStatus(id, body.get("status"))));
     }
@@ -80,6 +85,7 @@ public class RoleController {
 
     @PutMapping("/{id}/menus")
     @PreAuthorize("hasAuthority('perm:sys:role:update')")
+    @OperLog(title = "角色授权", module = "grant")
     public R<RoleVO> assignMenus(@PathVariable Long id, @RequestBody List<Long> menuIds) {
         return R.ok(RoleVO.from(grantService.replaceRoleMenus(id, menuIds)));
     }

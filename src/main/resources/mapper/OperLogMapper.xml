@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.OperLogMapper">
+
+    <resultMap id="operLogMap" type="com.octopus.demo.admin.entity.SysOperLog">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="module" column="module"/>
+        <result property="httpMethod" column="http_method"/>
+        <result property="requestUri" column="request_uri"/>
+        <result property="params" column="params"/>
+        <result property="operator" column="operator"/>
+        <result property="ip" column="ip"/>
+        <result property="status" column="status"/>
+        <result property="errorMsg" column="error_msg"/>
+        <result property="durationMs" column="duration_ms"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, title, module, http_method, request_uri, params, `operator`, ip, status, error_msg,
+        duration_ms, created_at
+    </sql>
+
+    <sql id="filters">
+        <if test="operator != null and operator != ''">
+            AND `operator` = #{operator}
+        </if>
+        <if test="module != null and module != ''">
+            AND module = #{module}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="from != null">
+            AND created_at &gt;= #{from}
+        </if>
+        <if test="to != null">
+            AND created_at &lt;= #{to}
+        </if>
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_oper_log (title, module, http_method, request_uri, params, `operator`, ip,
+                                  status, error_msg, duration_ms, created_at)
+        VALUES (#{title}, #{module}, #{httpMethod}, #{requestUri}, #{params}, #{operator}, #{ip},
+                #{status}, #{errorMsg}, #{durationMs}, #{createdAt})
+    </insert>
+
+    <select id="findById" resultMap="operLogMap">
+        SELECT <include refid="columns"/> FROM sys_oper_log WHERE id = #{id}
+    </select>
+
+    <select id="findPage" resultMap="operLogMap">
+        SELECT <include refid="columns"/> FROM sys_oper_log
+        WHERE 1 = 1
+        <include refid="filters"/>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_oper_log
+        WHERE 1 = 1
+        <include refid="filters"/>
+    </select>
+
+</mapper>

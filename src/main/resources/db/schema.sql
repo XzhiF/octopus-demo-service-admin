@@ -140,10 +140,42 @@ CREATE TABLE IF NOT EXISTS sys_job_log (
     KEY idx_sys_job_log_started (started_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS sys_login_log (
+    id         BIGINT       NOT NULL AUTO_INCREMENT,
+    username   VARCHAR(64)           DEFAULT NULL,
+    ip         VARCHAR(128)          DEFAULT NULL,
+    user_agent VARCHAR(512)          DEFAULT NULL,
+    status     TINYINT      NOT NULL COMMENT '0=failure, 1=success',
+    message    VARCHAR(255)          DEFAULT NULL,
+    login_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_sys_login_log_username (username),
+    KEY idx_sys_login_log_login_at (login_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sys_oper_log (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    title        VARCHAR(128) NOT NULL,
+    module       VARCHAR(64)           DEFAULT NULL,
+    http_method  VARCHAR(16)           DEFAULT NULL,
+    request_uri  VARCHAR(255)          DEFAULT NULL,
+    params       TEXT,
+    `operator`   VARCHAR(64)           DEFAULT NULL,
+    ip           VARCHAR(128)          DEFAULT NULL,
+    status       TINYINT      NOT NULL COMMENT '0=failure, 1=success',
+    error_msg    VARCHAR(500)          DEFAULT NULL,
+    duration_ms  BIGINT                DEFAULT NULL,
+    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_sys_oper_log_operator (`operator`),
+    KEY idx_sys_oper_log_created (created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Built-in sample jobs; paused by default so they produce no log noise until enabled.
 INSERT INTO sys_job (job_name, job_group, bean_name, cron, params, status, remark)
 VALUES ('demoHeartbeatJob', 'DEFAULT', 'demoHeartbeatJob', '0/30 * * * * ?', NULL, 0, '心跳示例任务，每次执行写入 heartbeat'),
-       ('jobLogCleanupJob', 'DEFAULT', 'jobLogCleanupJob', '0 0 3 * * ?', NULL, 0, '执行日志清理，保留天数取 sys.job.log.retention-days')
+       ('jobLogCleanupJob', 'DEFAULT', 'jobLogCleanupJob', '0 0 3 * * ?', NULL, 0, '执行日志清理，保留天数取 sys.job.log.retention-days'),
+       ('auditLogCleanupJob', 'DEFAULT', 'auditLogCleanupJob', '0 30 3 * * ?', NULL, 0, '审计日志清理，保留天数取 sys.log.retention-days')
 ON DUPLICATE KEY UPDATE remark = VALUES(remark);
 
 -- Seed roles (users and password hashes are created by BootstrapDataInitializer).
@@ -154,7 +186,8 @@ ON DUPLICATE KEY UPDATE name = VALUES(name), remark = VALUES(remark);
 
 -- Runtime parameters; every value is a string interpreted by its consumer.
 INSERT INTO sys_config (config_key, config_value, remark)
-VALUES ('sys.site.title', 'Octopus 管理平台', '站点标题，展示在顶部品牌与浏览器标签页')
+VALUES ('sys.site.title', 'Octopus 管理平台', '站点标题，展示在顶部品牌与浏览器标签页'),
+       ('sys.log.retention-days', '30', '登录与操作日志保留天数，auditLogCleanupJob 读取，非法值回退 30')
 ON DUPLICATE KEY UPDATE remark = VALUES(remark);
 
 -- Seed menus: catalog -> menus -> button permissions.
@@ -200,6 +233,18 @@ VALUES (8, 0, '系统监控', 'catalog', '/monitor', NULL, 'Monitor', NULL, 3, 1
 ON DUPLICATE KEY UPDATE name = VALUES(name), path = VALUES(path), component = VALUES(component),
                         icon = VALUES(icon), perms = VALUES(perms), sort = VALUES(sort);
 
+-- Operation log page under the 系统监控 catalog.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, perms, sort, visible, status)
+VALUES (102, 8, '操作日志', 'menu', '/monitor/oper-logs', 'monitor/oper-logs/index', 'Tickets', 'sys:operlog:list', 3, 1, 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), path = VALUES(path), component = VALUES(component),
+                        icon = VALUES(icon), perms = VALUES(perms), sort = VALUES(sort);
+
+-- Login audit log page under the system monitor catalog.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, icon, perms, sort, visible, status)
+VALUES (101, 8, '登录日志', 'menu', '/monitor/login-logs', 'monitor/login-logs/index', 'Document', 'sys:loginlog:list', 2, 1, 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), path = VALUES(path), component = VALUES(component),
+                        icon = VALUES(icon), perms = VALUES(perms), sort = VALUES(sort);
+
 -- Seed dictionary: user sex (男/女/未知).
 INSERT INTO sys_dict_type (id, dict_type, dict_name, status, remark)
 VALUES (1, 'sys_user_sex', '用户性别', 1, '用户性别列表')
@@ -217,7 +262,7 @@ INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
 VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9),
        (1, 11), (1, 12), (1, 13), (1, 21), (1, 22), (1, 23), (1, 31), (1, 32), (1, 33),
        (1, 51), (1, 52), (1, 53), (1, 61), (1, 62), (1, 63),
-       (1, 91), (1, 92), (1, 93), (1, 94),
+       (1, 91), (1, 92), (1, 93), (1, 94), (1, 101), (1, 102),
        (2, 1), (2, 2);
 
 -- ---------------------------------------------------------------------------

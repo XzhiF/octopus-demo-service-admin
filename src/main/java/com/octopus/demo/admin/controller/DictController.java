@@ -1,5 +1,6 @@
 package com.octopus.demo.admin.controller;
 
+import com.octopus.demo.admin.annotation.OperLog;
 import com.octopus.demo.admin.entity.SysDictData;
 import com.octopus.demo.admin.entity.SysDictType;
 import com.octopus.demo.admin.service.DictService;
@@ -37,18 +38,21 @@ public class DictController {
 
     @PostMapping("/types")
     @PreAuthorize("hasAuthority('perm:sys:dict:add')")
+    @OperLog(title = "新增字典类型", module = "dict")
     public R<DictTypeVO> createType(@RequestBody SysDictType type) {
         return R.ok(DictTypeVO.from(dictService.createType(type)));
     }
 
     @PutMapping("/types/{id}")
     @PreAuthorize("hasAuthority('perm:sys:dict:edit')")
+    @OperLog(title = "修改字典类型", module = "dict")
     public R<DictTypeVO> updateType(@PathVariable Long id, @RequestBody SysDictType type) {
         return R.ok(DictTypeVO.from(dictService.updateType(id, type)));
     }
 
     @DeleteMapping("/types/{id}")
     @PreAuthorize("hasAuthority('perm:sys:dict:delete')")
+    @OperLog(title = "删除字典类型", module = "dict")
     public R<Void> deleteType(@PathVariable Long id) {
         dictService.deleteType(id);
         return R.ok();
@@ -69,18 +73,21 @@ public class DictController {
 
     @PostMapping("/data")
     @PreAuthorize("hasAuthority('perm:sys:dict:add')")
+    @OperLog(title = "新增字典数据", module = "dict")
     public R<SysDictData> createData(@RequestBody SysDictData data) {
         return R.ok(dictService.createData(data));
     }
 
     @PutMapping("/data/{id}")
     @PreAuthorize("hasAuthority('perm:sys:dict:edit')")
+    @OperLog(title = "修改字典数据", module = "dict")
     public R<SysDictData> updateData(@PathVariable Long id, @RequestBody SysDictData data) {
         return R.ok(dictService.updateData(id, data));
     }
 
     @DeleteMapping("/data/{id}")
     @PreAuthorize("hasAuthority('perm:sys:dict:delete')")
+    @OperLog(title = "删除字典数据", module = "dict")
     public R<Void> deleteData(@PathVariable Long id) {
         dictService.deleteData(id);
         return R.ok();
