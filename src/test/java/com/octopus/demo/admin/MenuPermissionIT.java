@@ -81,13 +81,21 @@ class MenuPermissionIT {
     }
 
     @Test
-    @DisplayName("admin sees 系统管理 with 用户管理/角色管理/菜单管理 children")
+    @DisplayName("admin sees 系统管理/系统配置/系统监控; 系统管理 keeps 用户管理/角色管理/菜单管理 children")
     void adminSeesAllMenus() throws Exception {
         JsonNode data = menus(login("admin"));
 
-        assertThat(data.size()).isEqualTo(1);
-        JsonNode system = data.get(0);
-        assertThat(system.path("name").asText()).isEqualTo("系统管理");
+        Set<String> catalogNames = new LinkedHashSet<>();
+        data.forEach(catalog -> catalogNames.add(catalog.path("name").asText()));
+        assertThat(catalogNames).containsExactly("系统管理", "系统配置", "系统监控");
+
+        JsonNode system = null;
+        for (JsonNode catalog : data) {
+            if ("系统管理".equals(catalog.path("name").asText())) {
+                system = catalog;
+            }
+        }
+        assertThat(system).isNotNull();
         assertThat(system.path("path").asText()).isEqualTo("/system");
         assertThat(system.path("children").size()).isEqualTo(3);
         List<String> childNames = new ArrayList<>();
