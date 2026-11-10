@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.octopus.demo.admin.mapper.DictTypeMapper">
+
+    <sql id="columns">
+        id, dict_type, dict_name, status, remark
+    </sql>
+
+    <select id="findById" resultType="com.octopus.demo.admin.entity.SysDictType">
+        SELECT <include refid="columns"/> FROM sys_dict_type WHERE id = #{id}
+    </select>
+
+    <select id="findByType" resultType="com.octopus.demo.admin.entity.SysDictType">
+        SELECT <include refid="columns"/> FROM sys_dict_type WHERE dict_type = #{dictType} LIMIT 1
+    </select>
+
+    <sql id="pageFilter">
+        <where>
+            <if test="dictType != null and dictType != ''">
+                AND dict_type LIKE CONCAT('%', #{dictType}, '%')
+            </if>
+            <if test="dictName != null and dictName != ''">
+                AND dict_name LIKE CONCAT('%', #{dictName}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="findPage" resultType="com.octopus.demo.admin.entity.SysDictType">
+        SELECT <include refid="columns"/> FROM sys_dict_type
+        <include refid="pageFilter"/>
+        ORDER BY id LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM sys_dict_type
+        <include refid="pageFilter"/>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_dict_type (dict_type, dict_name, status, remark)
+        VALUES (#{dictType}, #{dictName}, COALESCE(#{status}, 1), #{remark})
+    </insert>
+
+    <update id="update">
+        UPDATE sys_dict_type
+        SET dict_type = #{dictType},
+            dict_name = #{dictName},
+            status = COALESCE(#{status}, status),
+            remark = #{remark}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_dict_type WHERE id = #{id}
+    </delete>
+
+</mapper>

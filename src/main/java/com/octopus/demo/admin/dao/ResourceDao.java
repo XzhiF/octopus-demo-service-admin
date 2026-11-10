@@ -12,4 +12,16 @@ public interface ResourceDao {
     java.util.List<SysResource> findAll();
     void deleteById(Long id);
     PageResultBean<SysResource> findAll(PageQueryBean query);
+
+    /** Direct children of the node, used to block deleting a menu that still has a subtree. */
+    int countChildren(Long id);
+
+    /** sys_role_menu references, used to block deleting a granted menu. */
+    int countRoleRefs(Long id);
+
+    /** Global perms uniqueness check; {@code excludeId} skips the row being updated. */
+    int countByPerms(String perms, Long excludeId);
+
+    /** Visible catalog/menu nodes granted to the user, ordered by sort. */
+    java.util.List<SysResource> findVisibleByUserId(Long userId);
 }
